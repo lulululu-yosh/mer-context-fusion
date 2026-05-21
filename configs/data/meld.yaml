@@ -1,0 +1,26 @@
+dataset:
+  name: MELD
+  raw_dir: data/raw/MELD
+  processed_dir: data/processed
+  train_csv: data/raw/MELD/train_sent_emo.csv
+  dev_csv: data/raw/MELD/dev_sent_emo.csv
+  test_csv: data/raw/MELD/test_sent_emo.csv
+
+labels:
+  emotion2id:
+    anger: 0
+    disgust: 1
+    fear: 2
+    joy: 3
+    neutral: 4
+    sadness: 5
+    surprise: 6
+
+context:
+  speaker_prefix: true
+  default_window: 3
+
+paths:
+  train_jsonl: data/processed/train.jsonl
+  dev_jsonl: data/processed/dev.jsonl
+  test_jsonl: data/processed/test.jsonl

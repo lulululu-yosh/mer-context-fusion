@@ -1,0 +1,32 @@
+experiment:
+  name: exp002_text_roberta_context_k3
+  seed: 42
+  output_dir: experiments/exp002_text_roberta_context_k3
+
+data:
+  train_file: data/processed/train.jsonl
+  dev_file: data/processed/dev.jsonl
+  test_file: data/processed/test.jsonl
+  text_field: context_text
+  label_field: label
+  context_window: 3
+
+model:
+  type: text_classifier
+  encoder_name: roberta-base
+  num_labels: 7
+  dropout: 0.1
+
+training:
+  batch_size: 16
+  epochs: 5
+  lr: 2.0e-5
+  weight_decay: 0.01
+  max_length: 256
+  gradient_accumulation_steps: 1
+
+evaluation:
+  metrics:
+    - accuracy
+    - macro_f1
+    - weighted_f1

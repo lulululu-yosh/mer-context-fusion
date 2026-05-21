@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# virtual environments
+.venv/
+venv/
+env/
+
+# data and large artifacts
+data/raw/
+data/interim/
+data/features/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+
+# experiment trackers
+wandb/
+runs/
+mlruns/
+
+# generated outputs
+outputs/predictions/*
+!outputs/predictions/.gitkeep
+
+# experiment generated artifacts
+experiments/*/checkpoints/
+experiments/*/*.pt
+experiments/*/*.pth
+
+# system
+.DS_Store
+Thumbs.db

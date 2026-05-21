@@ -17,10 +17,16 @@ labels:
     surprise: 6
 
 context:
+  include_current: true
+  sep_token: " [SEP] "
   speaker_prefix: true
-  default_window: 3
+  window_size: 3
 
-paths:
+outputs:
   train_jsonl: data/processed/train.jsonl
   dev_jsonl: data/processed/dev.jsonl
   test_jsonl: data/processed/test.jsonl
+
+analysis:
+  figure_dir: outputs/figures
+  table_dir: outputs/tables

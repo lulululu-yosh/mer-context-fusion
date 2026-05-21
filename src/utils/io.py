@@ -20,6 +20,7 @@ def save_json(data: dict[str, Any], path: str | Path) -> None:
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    """Read a JSONL file into a list of dicts"""
     rows = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -29,6 +30,7 @@ def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
 
 
 def write_jsonl(rows: list[dict[str, Any]], path: str | Path) -> None:
+    """Write a list of dicts into a JSONL file"""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:

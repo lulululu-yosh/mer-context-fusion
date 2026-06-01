@@ -13,7 +13,7 @@ data:
 
 model:
   type: text_classifier
-  encoder_name: roberta-base
+  encoder_name: /root/autodl-tmp/hf_models/roberta-base
   num_labels: 7
   dropout: 0.1
 
@@ -23,7 +23,10 @@ training:
   lr: 2.0e-5
   weight_decay: 0.01
   max_length: 128
-  gradient_accumulation_steps: 1
+  num_workers: 2
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  save_best_by: macro_f1
 
 evaluation:
   metrics:

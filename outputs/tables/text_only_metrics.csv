@@ -1,0 +1,2 @@
+model,epoch,train_loss,accuracy,macro_f1,weighted_f1
+RoBERTa-text-only,4.0,0.66981781167984,0.614066726780883,0.47104546870929903,0.6027380020510631

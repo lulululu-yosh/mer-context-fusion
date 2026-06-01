@@ -28,9 +28,16 @@ wandb/
 runs/
 mlruns/
 
-# generated outputs
-outputs/predictions/*
-!outputs/predictions/.gitkeep
+# outputs
+!outputs/
+!outputs/figures/
+!outputs/tables/
+!outputs/predictions/
+
+# keep large artifacts out
+outputs/**/*.pdf
+outputs/**/*.pt
+outputs/**/*.pth
 
 # experiment generated artifacts
 experiments/*/checkpoints/

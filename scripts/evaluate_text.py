@@ -92,7 +92,7 @@ def evaluate(
 
             records.append(record)
 
-    metrics = compute_metrics(y_true, y_pred)
+    metrics = compute_metrics(y_true, y_pred, id2label=id2emotion)
 
     sorted_ids = sorted(id2emotion.keys())
 

@@ -1,0 +1,50 @@
+experiment:
+  name: exp004_visual_resnet50
+  seed: 42
+  output_dir: experiments/exp004_visual_resnet50
+  modality: visual
+  notes: frozen ResNet frame embeddings with MLP classifier
+
+data:
+  train_file: data/processed/train.jsonl
+  dev_file: data/processed/dev.jsonl
+  test_file: data/processed/test.jsonl
+  label_field: label
+  feature_dir: data/features/visual/resnet50
+  train_features: data/features/visual/resnet50/train.pt
+  dev_features: data/features/visual/resnet50/dev.pt
+  test_features: data/features/visual/resnet50/test.pt
+
+paths:
+  media_root: data/raw/MELD
+  audio_pattern: audio/{split}/dia{dialogue_id}_utt{utterance_id}.wav
+  video_pattern: videos/{split}/dia{dialogue_id}_utt{utterance_id}.mp4
+
+features:
+  encoder_name: resnet50
+  num_frames: 8
+  batch_size: 16
+  missing_policy: zero
+
+model:
+  type: feature_mlp
+  num_labels: 7
+  hidden_dim: 256
+  dropout: 0.2
+
+training:
+  batch_size: 64
+  epochs: 10
+  lr: 1.0e-3
+  weight_decay: 0.01
+  num_workers: 0
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  save_best_by: macro_f1
+  use_class_weights: false
+
+evaluation:
+  metrics:
+    - accuracy
+    - macro_f1
+    - weighted_f1

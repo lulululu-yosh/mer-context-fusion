@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 import torch
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -62,7 +62,7 @@ class TextTrainer:
         return {
             key: value.to(self.device)
             for key, value in batch.items()
-            if key in {"input_ids", "attention_mask", "labels"}
+            if key in {"input_ids", "attention_mask", "features", "labels"}
         }
 
     def _make_loader(self, dataset, shuffle: bool) -> DataLoader:
@@ -118,19 +118,27 @@ class TextTrainer:
             dev_predictions.to_csv(self.output_dir / "dev_predictions_last.csv", index=False)
             pd.DataFrame(self.history).to_csv(self.output_dir / "metrics_history.csv", index=False)
 
-            print(f"\nEpoch {epoch}")
-            print(f"train_loss: {train_loss:.4f}")
-            print(dev_metrics)
-            print(dev_report)
+            log_message = (
+                f"\nEpoch {epoch}\n"
+                f"train_loss: {train_loss:.4f}\n"
+                f"{self._summary_metrics(dev_metrics)}\n"
+                f"{dev_report}"
+            )
+            print(log_message)
+            self._append_log(log_message)
 
             current_score = float(dev_metrics[self.best_metric_name])
 
             if current_score > self.best_score:
                 self.best_score = current_score
                 self._save_best(epoch_metrics, dev_report, dev_predictions)
-                print(f"Saved best model with {self.best_metric_name}={self.best_score:.4f}")
+                message = f"Saved best model with {self.best_metric_name}={self.best_score:.4f}"
+                print(message)
+                self._append_log(message)
 
-        print(f"\nTraining finished. Best {self.best_metric_name}: {self.best_score:.4f}")
+        final_message = f"\nTraining finished. Best {self.best_metric_name}: {self.best_score:.4f}"
+        print(final_message)
+        self._append_log(final_message)
 
         return {
             "best_metric": self.best_metric_name,
@@ -200,19 +208,28 @@ class TextTrainer:
                 pred_id = int(preds_list[i])
 
                 record = {
-                    "sample_id": batch["sample_id"][i],
-                    "text": batch["text"][i],
+                    "sample_id": self._batch_value(batch, "sample_id", i),
+                    "dialogue_id": self._batch_value(batch, "dialogue_id", i, ""),
+                    "utterance_id": self._batch_value(batch, "utterance_id", i, ""),
+                    "speaker": self._batch_value(batch, "speaker", i, ""),
+                    "text": self._batch_value(batch, "text", i, ""),
                     "gold": self.id2emotion[gold_id],
                     "pred": self.id2emotion[pred_id],
-                    "gold_from_data": batch["emotion"][i],
+                    "gold_from_data": self._batch_value(batch, "emotion", i, ""),
                 }
+
+                for key in batch.keys():
+                    if key.startswith("missing_"):
+                        record[key] = self._batch_value(batch, key, i, False)
+                    if key == "num_frames_used":
+                        record[key] = self._batch_value(batch, key, i, 0)
 
                 for label_id, emotion in self.id2emotion.items():
                     record[f"prob_{emotion}"] = probs_list[i][label_id]
 
                 records.append(record)
 
-        metrics = compute_metrics(y_true, y_pred)
+        metrics = compute_metrics(y_true, y_pred, id2label=self.id2emotion)
 
         sorted_ids = sorted(self.id2emotion.keys())
 
@@ -238,8 +255,49 @@ class TextTrainer:
         torch.save(self.model.state_dict(), self.output_dir / "best_model.pt")
 
         save_json(metrics, self.output_dir / "best_metrics.json")
+        save_json(metrics, self.output_dir / "metrics.json")
 
         with open(self.output_dir / "classification_report.txt", "w", encoding="utf-8") as f:
             f.write(report)
 
         predictions.to_csv(self.output_dir / "dev_predictions_best.csv", index=False)
+        predictions.to_csv(self.output_dir / "predictions.csv", index=False)
+        self._save_confusion_matrix(predictions, self.output_dir / "confusion_matrix.csv")
+
+    def _save_confusion_matrix(self, predictions: pd.DataFrame, path: Path) -> None:
+        labels = [self.id2emotion[i] for i in sorted(self.id2emotion.keys())]
+        matrix = confusion_matrix(
+            predictions["gold"],
+            predictions["pred"],
+            labels=labels,
+        )
+        matrix_df = pd.DataFrame(matrix, index=labels, columns=labels)
+        matrix_df.to_csv(path)
+
+    def _summary_metrics(self, metrics: dict[str, Any]) -> dict[str, float]:
+        return {
+            key: float(metrics[key])
+            for key in ["accuracy", "macro_f1", "weighted_f1"]
+            if key in metrics
+        }
+
+    def _append_log(self, message: str) -> None:
+        with open(self.output_dir / "train.log", "a", encoding="utf-8") as f:
+            f.write(message.rstrip() + "\n")
+
+    def _batch_value(
+        self,
+        batch: dict[str, Any],
+        key: str,
+        index: int,
+        default: Any = None,
+    ) -> Any:
+        if key not in batch:
+            return default
+        value = batch[key]
+        if isinstance(value, torch.Tensor):
+            item = value[index]
+            if item.ndim == 0:
+                return item.item()
+            return item.detach().cpu().tolist()
+        return value[index]

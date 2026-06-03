@@ -1,0 +1,52 @@
+experiment:
+  name: exp003_audio_wav2vec2
+  seed: 42
+  output_dir: experiments/exp003_audio_wav2vec2
+  modality: audio
+  notes: frozen wav2vec2 utterance embeddings with MLP classifier
+
+data:
+  train_file: data/processed/train.jsonl
+  dev_file: data/processed/dev.jsonl
+  test_file: data/processed/test.jsonl
+  label_field: label
+  feature_dir: data/features/audio/wav2vec2
+  train_features: data/features/audio/wav2vec2/train.pt
+  dev_features: data/features/audio/wav2vec2/dev.pt
+  test_features: data/features/audio/wav2vec2/test.pt
+
+paths:
+  media_root: data/raw/MELD
+  audio_pattern: audio/{split}/dia{dialogue_id}_utt{utterance_id}.wav
+  video_pattern: videos/{split}/dia{dialogue_id}_utt{utterance_id}.mp4
+
+features:
+  model_name: facebook/wav2vec2-base
+  sample_rate: 16000
+  batch_size: 8
+  max_duration_seconds: 30
+  pooling: mean
+  missing_policy: zero
+
+model:
+  type: feature_mlp
+  num_labels: 7
+  hidden_dim: 256
+  dropout: 0.2
+
+training:
+  batch_size: 64
+  epochs: 10
+  lr: 1.0e-3
+  weight_decay: 0.01
+  num_workers: 0
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  save_best_by: macro_f1
+  use_class_weights: false
+
+evaluation:
+  metrics:
+    - accuracy
+    - macro_f1
+    - weighted_f1

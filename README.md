@@ -53,12 +53,15 @@ mer-context-fusion/
 
 ## Current Stage
 
-Week 1 focuses on:
+Week 1 text baselines are implemented and can train/evaluate from the processed MELD JSONL files.
+Week 2 adds frozen-feature unimodal audio and visual baselines for reproducible comparison.
 
-1. Preparing MELD metadata.
-2. Building utterance-level and context-aware samples.
-3. Training a text-only RoBERTa baseline.
-4. Evaluating accuracy, macro-F1, weighted-F1, and confusion matrix.
+Implemented baselines:
+
+1. Text-only RoBERTa utterance baseline.
+2. Text-only RoBERTa context baseline.
+3. Audio-only wav2vec2/HuBERT cached-feature baseline.
+4. Visual-only ResNet frame cached-feature baseline.
 
 ## How to Set Up
 
@@ -83,6 +86,69 @@ python scripts/train_text.py --config configs/text/roberta_utt.yaml
 python scripts/train_text.py --config configs/text/roberta_context_k3.yaml
 python scripts/evaluate_checkpoint.py --config configs/text/roberta_context_k3.yaml
 ```
+
+## Week 2 Audio and Visual Baselines
+
+Place raw MELD metadata under `data/raw/MELD/` before running preprocessing. The
+processed JSONL files should live at:
+
+- `data/processed/train.jsonl`
+- `data/processed/dev.jsonl`
+- `data/processed/test.jsonl`
+
+Audio/video files are intentionally not committed. By default the Week-2 configs look for:
+
+- audio: `data/raw/MELD/audio/{split}/dia{dialogue_id}_utt{utterance_id}.wav`
+- video: `data/raw/MELD/videos/{split}/dia{dialogue_id}_utt{utterance_id}.mp4`
+
+If your local MELD media layout differs, edit the `paths.audio_pattern` and
+`paths.video_pattern` values in the YAML config. If `audio_path` or `video_path` fields are
+added directly to processed JSONL samples, those explicit paths are used first.
+
+```bash
+# Extract audio features
+python scripts/extract_audio_features.py --config configs/audio/wav2vec2.yaml
+
+# Train audio-only baseline
+python scripts/train_audio.py --config configs/audio/wav2vec2.yaml
+
+# Extract visual features
+python scripts/extract_visual_features.py --config configs/visual/resnet_frames.yaml
+
+# Train visual-only baseline
+python scripts/train_visual.py --config configs/visual/resnet_frames.yaml
+
+# Evaluate a cached-feature baseline on test
+python scripts/evaluate_unimodal.py --config configs/audio/wav2vec2.yaml --split test
+
+# Collect result table
+python scripts/collect_results.py --experiments_dir experiments --output outputs/tables/unimodal_results.csv
+
+# Plot a confusion matrix
+python scripts/plot_confusion_matrix.py --input experiments/exp003_audio_wav2vec2
+
+# Check local media availability
+python scripts/analyze_missing_media.py --config configs/audio/wav2vec2.yaml
+```
+
+Feature caches are saved under `data/features/` and are ignored by Git. Each cache contains
+`sample_id`, utterance metadata, label, embedding, and a modality missing flag. Missing or
+corrupt media is logged beside the cache as `*.missing.tsv`; the default policy writes a zero
+embedding so long runs do not crash.
+
+Each experiment directory saves:
+
+- `config.yaml`
+- `metrics.json`
+- `classification_report.txt`
+- `predictions.csv`
+- `confusion_matrix.csv`
+- `metrics_history.csv`
+- `train.log`
+- `best_model.pt` (ignored by Git)
+
+The following local artifacts should not be committed: `data/raw/`, `data/features/`,
+`checkpoints/`, `*.pt`, `*.pth`, `*.ckpt`, media files, `wandb/`, and `runs/`.
 
 ## Metrics
 
